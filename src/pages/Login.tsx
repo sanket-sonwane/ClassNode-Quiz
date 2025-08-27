@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { User, KeyRound, Mail, UserPlus, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Login = () => {
   const { teacherLogin, teacherSignup } = useAuth();
@@ -39,18 +39,28 @@ const Login = () => {
   
   const handleTeacherLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim() || !password.trim()) {
       toast.error("Please enter both email and password");
+      console.log("Login failed: Missing email or password");
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const success = await teacherLogin(email, password);
       if (!success) {
-        console.log("Login failed");
+        toast.error("Invalid email or password. Please try again.");
+        console.log("Login failed: Invalid credentials");
+        // Do not navigate
+      } else {
+        toast.success("Login successful!");
+        console.log("Login successful for:", email);
+        // Navigation is handled in AuthContext
       }
+    } catch (err) {
+      toast.error("An unexpected error occurred during login.");
+      console.error("Unexpected login error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -58,23 +68,34 @@ const Login = () => {
   
   const handleTeacherSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!teacherName.trim() || !email.trim() || !password.trim()) {
       toast.error("Please fill all required fields");
+      console.log("Signup failed: Missing fields");
       return;
     }
-    
+
     if (password !== confirmPassword) {
       toast.error("Passwords don't match");
+      console.log("Signup failed: Passwords do not match");
       return;
     }
-    
+
     setIsLoading(true);
     try {
       const success = await teacherSignup(teacherName, email, password);
       if (!success) {
-        console.log("Signup failed");
+        toast.error("Signup failed. Please check your details and try again.");
+        console.log("Signup failed for:", email);
+        // Do not navigate
+      } else {
+        toast.success("Signup successful!");
+        console.log("Signup successful for:", email);
+        // Navigation is handled in AuthContext
       }
+    } catch (err) {
+      toast.error("An unexpected error occurred during signup.");
+      console.error("Unexpected signup error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -136,6 +157,17 @@ const Login = () => {
                           disabled={isLoading}
                         />
                       </div>
+                    </div>
+
+                    {/* Forgot Password Link */}
+                    <div className="flex justify-end">
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs text-blue-600 hover:underline"
+                        tabIndex={-1}
+                      >
+                        Forgot Password?
+                      </Link>
                     </div>
 
                     <Button type="submit" className="w-full quiz-gradient" disabled={isLoading}>

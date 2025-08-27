@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Check for existing Supabase session
@@ -79,6 +79,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     checkSession();
   }, []);
+
+  useEffect(() => {
+    if (user && location.pathname !== "/reset-password") {
+      if (user.role === "teacher") {
+        navigate("/teacher");
+      } else if (user.role === "student") {
+        navigate("/student");
+      }
+    }
+  }, [user, location.pathname]);
 
   const teacherSignup = async (name: string, email: string, password: string) => {
     try {

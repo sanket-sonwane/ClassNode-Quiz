@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,6 +11,8 @@ import StudentJoin from "./pages/StudentJoin";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { QuizProvider } from "./contexts/quiz";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -32,6 +33,8 @@ const App = () => {
                   <Route path="/join/:roomCode?" element={<StudentJoin />} />
                   <Route path="/student" element={<StudentDashboard />} />
                   <Route path="/room/:roomCode" element={<StudentJoin />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </QuizProvider>
