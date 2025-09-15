@@ -13,6 +13,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { QuizProvider } from "./contexts/quiz";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import { Analytics } from "@vercel/analytics/next"
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
