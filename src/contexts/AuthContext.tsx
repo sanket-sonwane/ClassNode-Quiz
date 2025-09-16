@@ -17,9 +17,13 @@ type AuthContextType = {
   login: (name: string, role: UserRole) => void;
   teacherLogin: (email: string, password: string) => Promise<boolean>;
   teacherSignup: (name: string, email: string, password: string) => Promise<boolean>;
+  resetPassword: (email: string) => Promise<boolean>;
+  updatePassword: (newPassword: string) => Promise<boolean>;
   logout: () => void;
   roomCode: string | null;
   setRoomCode: (code: string | null) => void;
+  isPasswordRecovery: boolean;
+  setIsPasswordRecovery: (value: boolean) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,16 +32,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    // Check for password recovery in URL (when user clicks reset link)
+    const checkPasswordRecovery = () => {
+      const hash = window.location.hash;
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // Check if this is a recovery link
+      if (hash.includes('access_token') && hash.includes('type=recovery')) {
+        console.log('Password recovery detected in hash');
+        setIsPasswordRecovery(true);
+        
+        // Extract tokens from hash
+        const hashParams = new URLSearchParams(hash.substr(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+          // Set the session with the tokens from URL
+          supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+        }
+        
+        // Clear the hash for security
+        window.history.replaceState({}, '', window.location.pathname);
+        return true;
+      }
+      
+      // Also check query params as fallback
+      const accessToken = urlParams.get('access_token');
+      const type = urlParams.get('type');
+      
+      if (type === 'recovery' && accessToken) {
+        console.log('Password recovery detected in query params');
+        setIsPasswordRecovery(true);
+        return true;
+      }
+      
+      return false;
+    };
+
     // Check for existing Supabase session
     const checkSession = async () => {
       try {
+        // First check if this is a password recovery
+        const isRecovery = checkPasswordRecovery();
+        
+        if (isRecovery) {
+          setIsLoading(false);
+          return;
+        }
+        
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (session) {
+        if (session && !isPasswordRecovery) {
           // Fetch teacher details from Supabase
           const { data, error } = await supabase
             .from('teachers')
@@ -61,13 +115,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               .select('*')
               .eq('created_by', data.id)
               .eq('is_active', true)
-              .single();
+              .maybeSingle();
               
             if (quizData) {
               setRoomCode(quizData.room_code);
             }
             
-            navigate("/teacher");
+            if (location.pathname === "/" || location.pathname === "/login") {
+              navigate("/teacher", { replace: true });
+            }
           }
         }
       } catch (error) {
@@ -77,18 +133,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    checkSession();
-  }, []);
-
-  useEffect(() => {
-    if (user && location.pathname !== "/reset-password") {
-      if (user.role === "teacher") {
-        navigate("/teacher");
-      } else if (user.role === "student") {
-        navigate("/student");
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change event:', event);
+      
+      if (event === 'PASSWORD_RECOVERY' && session) {
+        console.log('Password recovery event detected');
+        setIsPasswordRecovery(true);
+        return;
       }
-    }
-  }, [user, location.pathname]);
+      
+      if (event === 'SIGNED_IN' && session && !isPasswordRecovery) {
+        // Handle successful login in the teacherLogin function instead
+        return;
+      }
+      
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setRoomCode(null);
+        setIsPasswordRecovery(false);
+      }
+    });
+
+    checkSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, isPasswordRecovery, location.pathname]);
 
   const teacherSignup = async (name: string, email: string, password: string) => {
     try {
@@ -144,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRoomCode(newRoomCode);
         
         toast.success(`Welcome, ${name}! Your account has been created.`);
-        navigate("/teacher");
+        navigate("/teacher", { replace: true }); // Use replace to prevent back button issues
         return true;
       }
 
@@ -170,7 +242,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error("Login error:", error);
-        toast.error(error.message);
+        if (error.message === "Invalid login credentials") {
+          toast.error("Wrong credentials, please try again");
+        } else {
+          toast.error(error.message);
+        }
         return false;
       }
 
@@ -203,7 +279,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .select('*')
           .eq('created_by', teacherData.id)
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
           
         if (quizData) {
           setRoomCode(quizData.room_code);
@@ -213,7 +289,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         toast.success(`Welcome back, ${teacherData.name}!`);
-        navigate("/teacher");
+        navigate("/teacher", { replace: true }); // Use replace to prevent back button issues
         return true;
       }
 
@@ -256,13 +332,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setRoomCode(null);
-    localStorage.removeItem("quizUser");
-    localStorage.removeItem("quizRoomCode");
-    navigate("/");
-    toast.info("Logged out successfully");
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+
+      if (error) {
+        console.error('Password reset error:', error);
+        toast.error(error.message || 'Failed to send reset email');
+        return false;
+      }
+
+      toast.success('Password reset email sent! Check your inbox.');
+      return true;
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast.error('An unexpected error occurred');
+      return false;
+    }
+  };
+
+  const updatePassword = async (newPassword: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        console.error('Password update error:', error);
+        toast.error(error.message || 'Failed to update password');
+        return false;
+      }
+
+      setIsPasswordRecovery(false);
+      toast.success('Password updated successfully!');
+      navigate("/", { replace: true });
+      return true;
+    } catch (error) {
+      console.error('Password update error:', error);
+      toast.error('An unexpected error occurred');
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      // Sign out from Supabase Auth
+      await supabase.auth.signOut();
+      
+      setUser(null);
+      setRoomCode(null);
+      localStorage.removeItem("quizUser");
+      localStorage.removeItem("quizRoomCode");
+      navigate("/");
+      toast.info("Logged out successfully");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to logout");
+    }
   };
 
   if (isLoading) {
@@ -270,7 +398,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, teacherLogin, teacherSignup, logout, roomCode, setRoomCode }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      teacherLogin, 
+      teacherSignup, 
+      resetPassword, 
+      updatePassword, 
+      logout, 
+      roomCode, 
+      setRoomCode, 
+      isPasswordRecovery, 
+      setIsPasswordRecovery 
+    }}>
       {children}
     </AuthContext.Provider>
   );

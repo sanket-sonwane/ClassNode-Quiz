@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
+import CreateQuizAI from "./pages/CreateQuizAI";
 import StudentJoin from "./pages/StudentJoin";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -31,6 +32,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Login />} />
                   <Route path="/teacher" element={<TeacherDashboard />} />
+                  <Route path="/create-quiz-ai" element={<CreateQuizAI />} />
                   <Route path="/join/:roomCode?" element={<StudentJoin />} />
                   <Route path="/student" element={<StudentDashboard />} />
                   <Route path="/room/:roomCode" element={<StudentJoin />} />

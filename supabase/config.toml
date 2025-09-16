@@ -1,1 +1,4 @@
 project_id = "tddobkuhizsdoevgiebl"
+
+[functions.generate-quiz-ai]
+verify_jwt = true

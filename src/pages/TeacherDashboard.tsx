@@ -107,13 +107,25 @@ const TeacherDashboard = () => {
             </TabsList>
 
             {!activeQuiz && (
-              <Button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="quiz-gradient"
-              >
-                <PlusCircle className="h-4 w-4 mr-1" />
-                Create Quiz
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button 
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="quiz-gradient flex-1 sm:flex-none mobile-button"
+                  size="lg"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Create Quiz
+                </Button>
+                <Button 
+                  onClick={() => navigate('/create-quiz-ai')}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white flex-1 sm:flex-none mobile-button"
+                  size="lg"
+                >
+                  <span className="text-lg mr-2">✨</span>
+                  <span className="hidden sm:inline">AI Quiz</span>
+                  <span className="sm:hidden">AI</span>
+                </Button>
+              </div>
             )}
           </div>
 
