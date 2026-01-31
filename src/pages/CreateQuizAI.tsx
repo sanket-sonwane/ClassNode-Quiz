@@ -67,11 +67,10 @@ const CreateQuizAI = () => {
         throw new Error('No authentication token');
       }
 
+      // Invoke the Edge Function; Supabase client will attach
+      // both `Authorization` (JWT) and `apikey` headers automatically
       const response = await supabase.functions.invoke('generate-quiz-ai', {
         body: formData,
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
 
       if (response.error) {
