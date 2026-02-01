@@ -50,10 +50,10 @@ serve(async (req) => {
 
     // Verify the user is authenticated and is a teacher
     const token = authHeader.replace('Bearer ', '');
-    const { data, error } = await supabaseClient.auth.getUser(token);
-    console.log('Decoded JWT:', data ? { userId: data.user?.id, email: data.user?.email } : null, 'Error:', error?.message || null);
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser(token);
+    console.log('Decoded JWT:', authData?.user ? { userId: authData.user.id, email: authData.user.email } : null, 'Error:', authError?.message || null);
     
-    if (error || !data) {
+    if (authError || !authData?.user) {
       return new Response(JSON.stringify({ 
         error: 'Authentication failed',
         success: false 
@@ -63,7 +63,7 @@ serve(async (req) => {
       });
     }
 
-    const user = data.user;
+    const user = authData.user;
 
     // Check if user is a teacher
     const { data: teacherData, error: teacherError } = await supabaseClient
