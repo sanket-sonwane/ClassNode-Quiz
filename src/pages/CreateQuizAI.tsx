@@ -46,52 +46,65 @@ const CreateQuizAI = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!formData.subject.trim() || !formData.topic.trim()) {
+    toast.error('Please fill in all required fields');
+    return;
+  }
+
+  if (formData.numQuestions < 1 || formData.numQuestions > 20) {
+    toast.error('Number of questions must be between 1 and 20');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    // Refresh the session to ensure we have a valid, non-expired token
+    const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
     
-    if (!formData.subject.trim() || !formData.topic.trim()) {
-      toast.error('Please fill in all required fields');
-      return;
+    if (sessionError || !session?.access_token) {
+      // If refresh fails, try to get the current session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.access_token) {
+        throw new Error('Please log in again to continue');
+      }
     }
 
-    if (formData.numQuestions < 1 || formData.numQuestions > 20) {
-      toast.error('Number of questions must be between 1 and 20');
-      return;
+    // Invoke the Edge Function
+    const response = await supabase.functions.invoke('generate-quiz-ai', {
+      body: formData,
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message || 'Failed to generate quiz');
     }
 
-    setLoading(true);
+    if (!response.data?.success) {
+      throw new Error(response.data?.error || 'Quiz generation failed');
+    }
 
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('No authentication token');
-      }
+    const { quiz } = response.data;
+    toast.success(`Quiz "${quiz.title}" created successfully with ${quiz.questionsCount} questions!`);
+    navigate('/teacher');
 
-      // Invoke the Edge Function; Supabase client will attach
-      // both `Authorization` (JWT) and `apikey` headers automatically
-      const response = await supabase.functions.invoke('generate-quiz-ai', {
-        body: formData,
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to generate quiz');
-      }
-
-      if (!response.data?.success) {
-        throw new Error(response.data?.error || 'Quiz generation failed');
-      }
-
-      const { quiz } = response.data;
-      toast.success(`Quiz "${quiz.title}" created successfully with ${quiz.questionsCount} questions!`);
-      navigate('/teacher');
-
-    } catch (error) {
-      console.error('Quiz generation error:', error);
+  } catch (error) {
+    console.error('Quiz generation error:', error);
+    
+    // Handle 401 specifically
+    if (error instanceof Error && error.message.includes('401')) {
+      toast.error('Session expired. Please log in again.');
+      // Optionally redirect to login
+      // navigate('/login');
+    } else {
       toast.error(error instanceof Error ? error.message : 'Failed to generate quiz');
-    } finally {
-      setLoading(false);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!user) {
     return (
