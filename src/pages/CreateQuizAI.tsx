@@ -64,7 +64,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     // Refresh the session to ensure we have a valid, non-expired token
     const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
-    console.log('Session Data:', session, 'Session Error:', sessionError);
+    console.log('Session Data:', session ? { hasAccessToken: !!session.access_token, expiresAt: session.expires_at } : null, 'Session Error:', sessionError?.message || null);
     
     if (sessionError || !session?.access_token) {
       // If refresh fails, try to get the current session
@@ -78,7 +78,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     const response = await supabase.functions.invoke('generate-quiz-ai', {
       body: formData,
     });
-    console.log('Edge Function Response:', response);
+    console.log('Edge Function Response:', { success: response.data?.success, error: response.error?.message || response.data?.error || null });
 
     if (response.error) {
       throw new Error(response.error.message || 'Failed to generate quiz');

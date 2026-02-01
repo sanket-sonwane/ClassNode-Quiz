@@ -37,7 +37,7 @@ serve(async (req) => {
 
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
-    console.log('Authorization Header:', authHeader);
+    console.log('Authorization Header:', authHeader ? 'present' : 'missing');
     if (!authHeader) {
       return new Response(JSON.stringify({ 
         error: 'No authorization header',
@@ -51,7 +51,7 @@ serve(async (req) => {
     // Verify the user is authenticated and is a teacher
     const token = authHeader.replace('Bearer ', '');
     const { data, error } = await supabaseClient.auth.getUser(token);
-    console.log('Decoded JWT:', data, 'Error:', error);
+    console.log('Decoded JWT:', data ? { userId: data.user?.id, email: data.user?.email } : null, 'Error:', error?.message || null);
     
     if (error || !data) {
       return new Response(JSON.stringify({ 
@@ -71,7 +71,7 @@ serve(async (req) => {
       .select('id')
       .eq('id', user.id)
       .single();
-    console.log('Teacher Check:', teacherData, teacherError);
+    console.log('Teacher Check:', teacherData ? 'found' : 'not found', 'Error:', teacherError?.message || null);
 
     if (teacherError || !teacherData) {
       return new Response(JSON.stringify({ 
