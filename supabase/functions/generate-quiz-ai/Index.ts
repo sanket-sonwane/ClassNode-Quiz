@@ -38,7 +38,13 @@ serve(async (req) => {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(JSON.stringify({ 
+        error: 'No authorization header',
+        success: false 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Verify the user is authenticated and is a teacher
@@ -46,7 +52,13 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     
     if (authError || !user) {
-      throw new Error('Authentication failed');
+      return new Response(JSON.stringify({ 
+        error: 'Authentication failed',
+        success: false 
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Check if user is a teacher
@@ -57,7 +69,13 @@ serve(async (req) => {
       .single();
 
     if (teacherError || !teacherData) {
-      throw new Error('Access denied: Teachers only');
+      return new Response(JSON.stringify({ 
+        error: 'Access denied: Teachers only',
+        success: false 
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const params: QuizParams = await req.json();
