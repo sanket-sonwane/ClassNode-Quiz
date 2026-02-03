@@ -332,6 +332,21 @@ const handleSubmit = async (e: React.FormEvent) => {
             </CardContent>
           </Card>
 
+          <Button
+  type="button"
+  onClick={async () => {
+    const { data, error } = await supabase.functions.invoke(
+      "generate-quiz-ai-v2",
+      { body: formData }
+    );
+
+    console.log("V2 response:", data, error);
+  }}
+>
+  TEST NEW AI (V2)
+</Button>
+
+
           {/* Footer info */}
           <div className="text-center mt-8 text-gray-400">
             <p className="text-sm">
