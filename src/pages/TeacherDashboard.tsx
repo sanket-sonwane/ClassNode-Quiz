@@ -9,6 +9,7 @@ import CreateQuizModal from "@/components/CreateQuizModal";
 import QuizList from "@/components/QuizList";
 import ActiveQuiz from "@/components/ActiveQuiz";
 import QuizResults from "@/components/QuizResults";
+import DarkModeSwitch from "@/components/ui/dark-mode-switch";
 
 const TeacherDashboard = () => {
   const { user, logout, roomCode } = useAuth();
@@ -47,29 +48,31 @@ const TeacherDashboard = () => {
   const displayRoomCode = activeQuiz?.roomCode || roomCode;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
+    <div className="min-h-screen bg-background transition-colors duration-300">
+      <header className="border-b bg-white dark:bg-gray-900 sticky top-0 z-50 transition-colors duration-300">
+
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold">
               <span className="text-quiz-primary">Class</span>
               <span className="text-quiz-secondary">Node</span>
             </h1>
-            <span className="text-xs sm:text-sm bg-gray-100 px-2 py-1 rounded-md">
-              Teacher
-            </span>
+                    <span className="text-xs sm:text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md transition-colors duration-300">Teacher</span>
+
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <DarkModeSwitch />
             {displayRoomCode && (
               <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm text-gray-500">Room Code:</span>
-                <span className="font-mono font-bold text-sm bg-quiz-primary/10 text-quiz-primary px-2 py-1 rounded-md">
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">Room Code:</span>
+                <span className="font-mono font-bold text-sm bg-quiz-primary/10 dark:bg-quiz-primary/20 text-quiz-primary px-2 py-1 rounded-md transition-colors duration-300">
                   {displayRoomCode}
                 </span>
               </div>
             )}
-            <Button variant="ghost" size="sm" onClick={logout}>
+            <Button variant="ghost" size="sm" onClick={logout} className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-300"
+>
               <LogOut className="h-4 w-4 mr-1" />
               Logout
             </Button>
