@@ -80,7 +80,8 @@ const StudentJoin = () => {
       localStorage.setItem("studentId", studentData.id);
 
       setRoomCode(roomCode.toUpperCase());
-      login(name, "student");
+      // Keep the real student UUID so answers/results reference the right row.
+      login(name.trim(), "student", studentData.id);
 
       console.log("Student joined successfully:", {
         studentId: studentData.id,
