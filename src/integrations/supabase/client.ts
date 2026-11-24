@@ -16,6 +16,11 @@ export const supabase = createClient<Database>(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      // Auth redirects (password recovery, email confirmation) are handled
+      // explicitly in AuthContext so token consumption is deterministic and
+      // never races with the app clearing the URL.
+      detectSessionInUrl: false,
+      flowType: 'implicit',
     },
     global: {
       fetch: fetch.bind(globalThis),
