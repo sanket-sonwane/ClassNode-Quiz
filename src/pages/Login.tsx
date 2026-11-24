@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { User, KeyRound, Mail, UserPlus, Loader2 } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 
+const MIN_PASSWORD_LENGTH = 6;
+
 const Login = () => {
   const { teacherLogin, teacherSignup } = useAuth();
   const [name, setName] = useState("");
@@ -42,25 +44,16 @@ const Login = () => {
 
     if (!email.trim() || !password.trim()) {
       toast.error("Please enter both email and password");
-      console.log("Login failed: Missing email or password");
       return;
     }
 
     setIsLoading(true);
     try {
-      const success = await teacherLogin(email, password);
-      if (!success) {
-        toast.error("Invalid email or password. Please try again.");
-        console.log("Login failed: Invalid credentials");
-        // Do not navigate
-      } else {
-        toast.success("Login successful!");
-        console.log("Login successful for:", email);
-        // Navigation is handled in AuthContext
-      }
+      // AuthContext owns the success/error messaging and navigation.
+      await teacherLogin(email, password);
     } catch (err) {
-      toast.error("An unexpected error occurred during login.");
       console.error("Unexpected login error:", err);
+      toast.error("An unexpected error occurred during login.");
     } finally {
       setIsLoading(false);
     }
@@ -71,31 +64,32 @@ const Login = () => {
 
     if (!teacherName.trim() || !email.trim() || !password.trim()) {
       toast.error("Please fill all required fields");
-      console.log("Signup failed: Missing fields");
+      return;
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`);
       return;
     }
 
     if (password !== confirmPassword) {
       toast.error("Passwords don't match");
-      console.log("Signup failed: Passwords do not match");
       return;
     }
 
     setIsLoading(true);
     try {
-      const success = await teacherSignup(teacherName, email, password);
-      if (!success) {
-        toast.error("Signup failed. Please check your details and try again.");
-        console.log("Signup failed for:", email);
-        // Do not navigate
-      } else {
-        toast.success("Signup successful!");
-        console.log("Signup successful for:", email);
-        // Navigation is handled in AuthContext
+      const result = await teacherSignup(teacherName, email, password);
+
+      // Email confirmation is enabled: send the user to the login tab.
+      if (result.success && result.needsConfirmation) {
+        setAuthTab("login");
+        setPassword("");
+        setConfirmPassword("");
       }
     } catch (err) {
-      toast.error("An unexpected error occurred during signup.");
       console.error("Unexpected signup error:", err);
+      toast.error("An unexpected error occurred during signup.");
     } finally {
       setIsLoading(false);
     }
@@ -137,6 +131,7 @@ const Login = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           className="pl-9"
+                          autoComplete="email"
                           disabled={isLoading}
                         />
                       </div>
@@ -154,6 +149,7 @@ const Login = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           className="pl-9"
+                          autoComplete="current-password"
                           disabled={isLoading}
                         />
                       </div>
@@ -197,6 +193,7 @@ const Login = () => {
                           value={teacherName}
                           onChange={(e) => setTeacherName(e.target.value)}
                           className="pl-9"
+                          autoComplete="name"
                           disabled={isLoading}
                         />
                       </div>
@@ -214,6 +211,7 @@ const Login = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           className="pl-9"
+                          autoComplete="email"
                           disabled={isLoading}
                         />
                       </div>
@@ -231,9 +229,13 @@ const Login = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           className="pl-9"
+                          autoComplete="new-password"
                           disabled={isLoading}
                         />
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        Use at least {MIN_PASSWORD_LENGTH} characters.
+                      </p>
                     </div>
 
                     {/* Confirm Password */}
@@ -248,6 +250,7 @@ const Login = () => {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           className="pl-9"
+                          autoComplete="new-password"
                           disabled={isLoading}
                         />
                       </div>
